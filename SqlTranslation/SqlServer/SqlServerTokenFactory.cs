@@ -1,5 +1,5 @@
-﻿using System;
-using System.Linq.Expressions;
+﻿using System.Linq.Expressions;
+using System.Xml.Linq;
 
 namespace SqlTranslation.SqlServer;
 public class SqlServerTokenFactory : IDbTokenFactory
@@ -60,6 +60,24 @@ public class SqlServerTokenFactory : IDbTokenFactory
         throw new NotSupportedException($"Member expression only supports referring to a table column or runtime variable");        
     }
 
+    public IDbToken BuildStaticMember(Type declaringType, string memberName, Type returnType)
+    {
+        if (declaringType == typeof(string) && memberName == nameof(string.Empty))
+        {
+            return new SqlServerConstant(string.Empty, null, returnType);
+        }
+        else if (declaringType == typeof(DateTime) && memberName == nameof(DateTime.Now))
+        {
+            return new SqlServerFunc("GETDATE", [], returnType);
+        }
+        else if (declaringType == typeof(DateTimeOffset) && memberName == nameof(DateTimeOffset.Now))
+        {
+            return new SqlServerFunc("SYSDATETIMEOFFSET", [], returnType);
+        }
+
+        throw new NotSupportedException($"Member expression of {declaringType.FullName}.{memberName} is not supported");
+    }
+
     public IDbToken BuildUnary(ExpressionType expressionType, IDbToken operand, Type returnType)
     {
         if (operand is ISelectable selectable)
@@ -81,6 +99,11 @@ public class SqlServerTokenFactory : IDbTokenFactory
             }
         }
         throw new NotSupportedException($"Unary expression type {expressionType} is not supported.");
+    }
+
+    public IDbToken BuildFunc(string funcName, ISelectable[] parameters, Type returnType)
+    {
+        return new SqlServerFunc(funcName, parameters, returnType);
     }
 
     private static readonly Dictionary<ExpressionType, EqualityType> _equalityTypesByExpressionType = new()

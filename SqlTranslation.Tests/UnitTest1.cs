@@ -11,9 +11,10 @@ public class UnitTest1
         var tokenFactory = new SqlServerTokenFactory();
         var expressionTranslator = new ExpressionTranslator(tokenFactory);
 
-        Expression<Func<TestEntity, bool>> expression = x => x.TestBool || x.TestBool == false && (x.TestString ?? "TEST") == "TEST";
+        Expression<Func<TestEntity, object>> expression = x => new { Test = x.TestString };
 
         var token = expressionTranslator.Translate(expression.Body);
+        
         Assert.Equal("[x].[TestBool] = 1 OR ([x].[TestBool] = 0 AND [x].[TestString] = 'LOL')", token.ToString());
     }
 }
