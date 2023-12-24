@@ -11,10 +11,24 @@ public class ExpressionTranslator : ExpressionVisitor
         _state = new();
     }
 
-    public IDbToken Translate(Expression expression)
+    public IDbToken Translate(Expression expression, bool isCondition = false)
     {
         Visit(expression);
-        return _state.ResultStack.Pop();
+        var token = _state.ResultStack.Pop();
+        if (isCondition && token is not ICondition)
+        {
+            if (token is ISelectable selectable && selectable.ReturnType == typeof(bool))
+            {
+                var trueConstant = _dbTokenFactory.BuildConstant(true, null, typeof(bool));
+                return _dbTokenFactory.BuildBinary(ExpressionType.Equal, selectable, trueConstant, typeof(bool));
+            }
+            throw new NotSupportedException();
+        }
+        else if (!isCondition && token is ICondition)
+        {
+            throw new NotSupportedException();
+        }
+        return token;
     }
 
     protected override Expression VisitBinary(BinaryExpression node)

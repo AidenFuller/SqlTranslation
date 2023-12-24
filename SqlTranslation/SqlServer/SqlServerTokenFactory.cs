@@ -23,6 +23,10 @@ public class SqlServerTokenFactory : IDbTokenFactory
         {
             if (_equalityTypesByExpressionType.TryGetValue(expressionType, out var equalityType))
             {
+                if (_nullableEqualityMap.TryGetValue(equalityType, out var nullableEquality) && ((leftSelectable is IDbConstant leftConstant && leftConstant.Value == null) || (rightSelectable is IDbConstant rightConstant && rightConstant.Value == null)))
+                {
+                    equalityType = nullableEquality;
+                }
                 return new SqlServerEqualityCondition(leftSelectable, equalityType, rightSelectable);
             }
             else if (_operationTypesByExpressionType.TryGetValue(expressionType, out var operationType))
@@ -113,13 +117,19 @@ public class SqlServerTokenFactory : IDbTokenFactory
         [ExpressionType.GreaterThan] = EqualityType.GreaterThan,
         [ExpressionType.GreaterThanOrEqual] = EqualityType.GreaterThanOrEqual,
         [ExpressionType.LessThan] = EqualityType.LessThan,
-        [ExpressionType.LessThanOrEqual] = EqualityType.LessThanOrEqual,
+        [ExpressionType.LessThanOrEqual] = EqualityType.LessThanOrEqual
     };
 
     private static readonly Dictionary<ExpressionType, LogicalType> _logicalTypesByExpressionType = new()
     {
         [ExpressionType.AndAlso] = LogicalType.And,
         [ExpressionType.OrElse] = LogicalType.Or,
+    };
+
+    private static readonly Dictionary<EqualityType, EqualityType> _nullableEqualityMap = new()
+    {
+        [EqualityType.Equal] = EqualityType.Is,
+        [EqualityType.NotEqual] = EqualityType.IsNot,
     };
 
     private static readonly Dictionary<ExpressionType, OperationType> _operationTypesByExpressionType = new()

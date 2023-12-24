@@ -20,7 +20,9 @@ public enum EqualityType
     In,
     NotIn,
     Between,
-    NotBetween
+    NotBetween,
+    Is,
+    IsNot,
 }
 
 public static class EqualityTypeExtensions
@@ -41,6 +43,8 @@ public static class EqualityTypeExtensions
             EqualityType.NotIn => "NOT IN",
             EqualityType.Between => "BETWEEN",
             EqualityType.NotBetween => "NOT BETWEEN",
+            EqualityType.Is => "IS",
+            EqualityType.IsNot => "IS NOT",
             _ => throw new NotImplementedException(),
         };
     }
